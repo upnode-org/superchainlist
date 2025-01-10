@@ -1,101 +1,59 @@
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
+import { AggregatedData, Superchain } from "@/utils/generateChainData";
+import Link from "next/link";
+import IconImage from "@/components/IconImage";
+import { Title } from "@/components/Typography"
+import Container from "@/components/Container";
 
-export default function Home() {
+async function fetchChainData() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/chains`
+    , { next: { revalidate: 43200 }, } // 12 hour cache
+  );
+
+  return res.json()
+}
+
+export default async function Home() {
+  // const chainlist = await fetchChainData()
+  const chainlist: AggregatedData[] = await fetchChainData()
+  // const sorted = chainlist.sort((a,b) => {
+  // })
+  console.log(chainlist);
+
+
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+    <Container>
+      <div className="items-center justify-items-center min-h-screen size-full">
+        <main className="flex h-full flex-col gap-8  items-center sm:items-start w-full">
+          {/* Hero */}
+          <div className="bg-[#ff0421] text-white size-full rounded-2xl p-4 h-40 flex flex-col justify-between">
+            <Title className="mb-2 font-extralight">Superchain Registry</Title>
+            <button className="bg-black w-fit px-4 py-2 ml-auto">Something &gt;</button>
+          </div>
+          {/* Main Body */}
+          <div className="size-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {chainlist.map((chain: AggregatedData) => {
+                return (
+                  <Link href={`/chain/${chain.main.chainId}`}>
+                    <Card className="relative hover:scale-[101%] hover:shadow-xl transition-transform overflow-hidden">
+                      <CardHeader className="flex !flex-row justify-between relative -mt-0.5 z-10">
+                        <div className="max-w-fit">
+                          <CardTitle className="flex justify-between">{chain.main.name}</CardTitle>
+                          <CardDescription>{chain.main.identifier}</CardDescription>
+                        </div>
+                        <IconImage iconParam={chain.main.icon} size={36} />
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </main>
+      </div>
+    </Container>
   );
 }
