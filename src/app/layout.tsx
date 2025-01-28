@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,8 +34,9 @@ export default function RootLayout({
         </div>
         <footer className="bg-stone-900 text-white w-full py-2">
           <div className="container mx-auto flex gap-6 flex-wrap items-center justify-center">
-            Footer
+            ...
           </div>
+          <Toaster />
         </footer>
       </body>
     </html>

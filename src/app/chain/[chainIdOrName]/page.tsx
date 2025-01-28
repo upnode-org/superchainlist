@@ -1,6 +1,6 @@
 import { SectionTitle, Subtitle, Title } from "@/components/Typography";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AggregatedData, generateChainData, Superchain } from "@/utils/generateChainData";
+import { AggregatedData, generateChainData, Superchain } from "@/lib/generateChainData";
 import { notFound } from "next/navigation";
 import IconImage from "@/components/IconImage";
 import { capitalize, cn } from "@/lib/utils";
@@ -14,7 +14,8 @@ import Link from "next/link";
 // L1 Contract
 // Contract addresses for L1
 // L2 contracts are the same i believe
-
+// TX Debugger
+// Wallet interactions
 
 interface ChainParams {
     params: {
@@ -74,7 +75,7 @@ export async function generateMetadata({ params }: { params: { chainIdOrName: st
 
 const getChain = async (chainIdOrName: string) => {
     const chains: AggregatedData[] = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/chains`, {
-        next: { revalidate: 46000 }, // Revalidate data every 60 seconds
+        // next: { revalidate: 46000 }, // Revalidate data every 24 hours
     }).then((res) => res.json());
 
     const decodedChainIdOrName = decodeURIComponent(chainIdOrName);
@@ -103,7 +104,6 @@ export default async function ChainPage({ params }: { params: { chainIdOrName: s
     if (chain === undefined) {
         notFound();
     }
-    console.log(chain);
     return (
         <div className="flex flex-col gap- h-full">
             <div className={`bg-red-500`}>
@@ -111,14 +111,14 @@ export default async function ChainPage({ params }: { params: { chainIdOrName: s
                     <div className="flex justify-between">
                         <Title>{chain.main.name}</Title>
                         <div>
-                            <IconImage iconParam={chain.main.icon} size={32} />
+                            <IconImage iconParam={chain.main.logo} size={32} />
                         </div>
                     </div>
 
                     <div className=" space-x-1 mt-2">
                         {
                             chain.main.governedByOptimism &&
-                            <Badge variant={"outline"} className="bg-[#FF0420] text-white rounded-full">Governed by Optimism</Badge>}
+                            <Badge variant={"default"} className="bg-[#FF0420] text-white rounded-full shadow-inner">Governed by Optimism</Badge>}
                         {
                             chain.main.infoURL &&
                             <Link href={chain.main.infoURL}>

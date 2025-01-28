@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateChainData } from "@/utils/generateChainData";
+import { generateChainData } from "@/lib/generateChainData";
 
 export async function GET() {
   try {

@@ -1,9 +1,9 @@
-// import { getImageColorsFromURL } from "@/lib/getAverageColor";
+import { getImageColorsFromURL } from "@/lib/getAverageColor";
 
 interface ChainIdNetworkItem {
   name: string;
   chain: string;
-  icon: string;
+  logo: string;
   network: string;
   rpc?: string[];
   faucets: string[];
@@ -64,10 +64,10 @@ type WithoutExplorersFromSuperchain = Omit<SuperchainEntry, "explorers">;
 export type Superchain = WithoutExplorersFromSuperchain &
   PartialChainIdWithoutExplorers & {
     explorers: string[];
-    icon?: string;
+    logo?: string;
     symbol?: string;
     tvl?: number;
-    iconColors?: {
+    logoColors?: {
       average: string;
       mostCommon: string;
     };
@@ -152,22 +152,35 @@ async function enrichSuperchainEntry(
     ...new Set([...superchainExplorers, ...chainIdExplorers]),
   ];
 
-  // Use DeFi Llama data to set an icon if present
-  const icon = llamaData
-    ? `https://icons.llamao.fi/icons/chains/rsz_${llamaData.name}.jpg`
+  // console.log(llamaData?.name || superchain.name, superchain.name);
+  
+  const requestName = (llamaData?.name || superchain.name).replace(/[\s-]/g, '');
+
+  // Use DeFi Llama data to set an logo if present
+  // Another logo api to add
+  // https://cryptologos.cc/logos/optimism-ethereum-op-logo.png
+  const logo = llamaData
+    ? `https://icons.llamao.fi/icons/chains/rsz_${requestName.toLowerCase()}`
     : undefined;
   llamaData?.tokenSymbol;
 
-  let iconColors: { average: string; mostCommon: string } | undefined;
-  // if (icon) {
-  //   const result = await getImageColorsFromURL(icon);
-  //   if (result) {
-  //     iconColors = {
-  //       average: result.averageColor,
-  //       mostCommon: result.mostCommonColor,
-  //     };
-  //   }
-  // }
+  let logoColors: { average: string; mostCommon: string } | undefined;
+  if (logo) {
+    try {
+      const result = await getImageColorsFromURL(logo);
+      if (result) {
+        logoColors = {
+          average: result.averageColor,
+          mostCommon: result.mostCommonColor,
+        };
+      }
+    } catch (err: any) {
+      console.error(`Failed to extract colors from logo (${logo}):`, err);
+      
+    }
+  }
+
+  //https://icons.llamao.fi/icons/chains/rsz_zora.jpg
 
   // Omit explorers from chainIdData to avoid conflicts
   const { explorers: _unused, ...restChainIdData } = chainIdData ?? {};
@@ -181,10 +194,11 @@ async function enrichSuperchainEntry(
 
     // Our single merged explorers array
     explorers: mergedExplorers,
-    icon,
+    logo,
     symbol: llamaData?.tokenSymbol,
     tvl: llamaData?.tvl,
-    iconColors
+    logoColors,
+    name: llamaData?.name || superchain.name
   };
 }
 
@@ -192,7 +206,7 @@ async function enrichSuperchainEntry(
  * Build the final structure so that for each group of networks with the same
  * `identifier.split("/")[1]` (the 'rightKey'), we designate:
  *
- *   - `main`: the mainnet of that Superchain network with 
+ *   - `main`: the mainnet of that Superchain network with
  *     leftKey === "mainnet", or the first one otherwise
  *   - `others`: an array of the remaining Superchains relating
  *      to the mainnet ie. testnets
@@ -232,7 +246,8 @@ function buildAggregatedChainStructure(enrichedSuperchains: Superchain[]) {
     // Otherwise, try to place it in an existing block with near matching identifier
     let placed = false;
     for (let i = 0; i < aggregatedData.length; i++) {
-      const [_, aggregatedDataRightKey] = aggregatedData[i].main.identifier.split("/")
+      const [_, aggregatedDataRightKey] =
+        aggregatedData[i].main.identifier.split("/");
       if (rightKey.includes(aggregatedDataRightKey)) {
         aggregatedData[i].other.push(chain);
         placed = true;
@@ -249,7 +264,7 @@ function buildAggregatedChainStructure(enrichedSuperchains: Superchain[]) {
     }
   }
 
-  return aggregatedData
+  return aggregatedData;
 }
 
 /**
@@ -286,5 +301,12 @@ export async function generateChainData(): Promise<AggregatedData[]> {
   );
 
   // Build the aggregated structure from the enriched superchains
-  return buildAggregatedChainStructure(enrichedSuperchains);
+  const structuredData = buildAggregatedChainStructure(enrichedSuperchains);
+  structuredData.sort((a, b) => {
+    const tvlA = a.main.tvl ?? 0; // Default to 0 if TVL is undefined
+    const tvlB = b.main.tvl ?? 0;
+    return tvlB - tvlA;
+  });
+  
+  return structuredData;
 }

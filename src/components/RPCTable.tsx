@@ -8,10 +8,11 @@ import {
   TableCell,
   TableHead,
 } from "./ui/table";
-import { XCircle, CheckCircle2, RefreshCcw, MessageCircleWarning, Info } from "lucide-react";
+import { XCircle, CheckCircle2, RefreshCcw, MessageCircleWarning, Info, Copy } from "lucide-react";
 import classNames from "classnames";
 import { CardTitle } from "./ui/card";
 import { SectionTitle, Title } from "./Typography";
+import { useToast } from "@/hooks/use-toast";
 
 interface RPCListParams {
   rpcEndpoints: string[];
@@ -21,9 +22,15 @@ export default function RPCList({ rpcEndpoints }: RPCListParams) {
   const { rpcData, loading, error, refresh } = useRPCMetrics(rpcEndpoints);
   const { onCopy } = useCopy({
     resetAfter: 2000,
-    onSuccess: (data) => console.log(`Copied: ${data}`),
+    onSuccess: (data) => toast({
+      // title: "Copied",
+      description: "Sucessfully copied"
+      
+    }),
     onError: () => console.error("Failed to copy!"),
   });
+
+  const { toast } = useToast()
 
   return (
     <div>
@@ -35,11 +42,11 @@ export default function RPCList({ rpcEndpoints }: RPCListParams) {
         <button
           onClick={refresh}
           disabled={loading}
-          className="bg-stone-500 text-white px-1.5 py-1.5 rounded hover:bg-stone-700 disabled:opacity-50"
+          className="bg-white text-black px-1.5 py-1.5 rounded  hover:bg-stone-50 disabled:opacity-50 border transition-all hover:shadow-inner hover:border-collapse"
         >
           <RefreshCcw
             className={classNames("h-4 w-4 transition-transform", {
-              "animate-spin": loading,
+              "animate-spin direction-reverse": loading,
             })}
           />
         </button>
@@ -48,7 +55,7 @@ export default function RPCList({ rpcEndpoints }: RPCListParams) {
       {/* Error Skeleton */}
       {error && (
         <div className="p-4 h-24 bg-muted rounded flex flex-row items-center justify-center">
-          <Info className="size-8 m-2 text-red-500"/>
+          <Info className="size-8 m-2 text-red-500" />
           <div className="border-l pl-2 border-stone-700">
             <SectionTitle className="mt-0">Error</SectionTitle>
             <p>{error}</p>
@@ -79,6 +86,7 @@ export default function RPCList({ rpcEndpoints }: RPCListParams) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead></TableHead>
               <TableHead>Server Address</TableHead>
               <TableHead>Height</TableHead>
               <TableHead>Latency</TableHead>
@@ -89,12 +97,19 @@ export default function RPCList({ rpcEndpoints }: RPCListParams) {
           <TableBody>
             {rpcData.map((rpcInfo) => (
               <TableRow key={rpcInfo.rpc}>
+                <TableCell className="">
+                  <Copy 
+                  className="px-0.5 size-4" 
+                  onClick={() => onCopy(rpcInfo.rpc)}
+                  />
+                </TableCell>
                 <TableCell
                   className="font-medium hover:underline cursor-copy"
-                  onClick={() => onCopy(rpcInfo.rpc)}
+
                 >
-                  {rpcInfo.rpc}
+                  <span className=" text-nowrap">{rpcInfo.rpc}</span>
                 </TableCell>
+
                 <TableCell>{rpcInfo.blockHeight}</TableCell>
                 <TableCell>{rpcInfo.latency}</TableCell>
                 <TableCell className=" flex align-middle [&>*]:mx-auto">
