@@ -163,3 +163,43 @@ function rgbToHex(r: number, g: number, b: number): string {
   const blue = clamp(b).toString(16).padStart(2, "0");
   return `#${red}${green}${blue}`;
 }
+
+/**
+ * Returns a color that is contrasting to the background color
+ */
+export function getContrastingTextColor(backgroundColor: string): string {
+  // Convert hex to RGB
+  function hexToRgb(hex: string): [number, number, number] {
+      hex = hex.replace(/^#/, '');
+      let bigint = parseInt(hex, 16);
+
+      if (hex.length === 3) {
+          return [
+              ((bigint >> 8) & 0xf) * 17,
+              ((bigint >> 4) & 0xf) * 17,
+              (bigint & 0xf) * 17
+          ];
+      }
+
+      return [
+          (bigint >> 16) & 255,
+          (bigint >> 8) & 255,
+          bigint & 255
+      ];
+  }
+
+  // Calculate relative luminance
+  function getLuminance(r: number, g: number, b: number): number {
+      const [R, G, B] = [r, g, b].map((c) => {
+          c /= 255;
+          return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      });
+
+      return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+  }
+
+  const [r, g, b] = hexToRgb(backgroundColor);
+  const luminance = getLuminance(r, g, b);
+
+  return luminance > 0.5 ? '#000000' : '#FFFFFF'; // Return black or white text color
+}

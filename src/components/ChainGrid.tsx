@@ -1,17 +1,22 @@
-import { AggregatedData } from "@/lib/generateChainData";
+"use client"
+import { AggregatedData } from "@/lib/getChainData";
 import Link from "next/link"
 import { Badge } from "./ui/badge"
 import { Card, CardContent } from "./ui/card"
 import { capitalize } from "@/lib/utils"
 import FallbackImage from "./FallbackImage";
+import { useChains } from "@/context/ChainContext";
 
-export default function ChainGrid({ chains }: { chains: AggregatedData[] }) {
+
+export default function ChainGrid() {
+    const { filteredChains } = useChains()
+
     return (
         <div className="size-full">
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 ">
-                {chains.map((chain: AggregatedData) => {
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] md:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 ">
+                {filteredChains.map((chain: AggregatedData) => {
                     const { main } = chain
-                    
+
                     return (
                         <ChainCard
                             key={main.chainId}
@@ -67,14 +72,14 @@ function ChainCard({
                 </div>
                 <CardContent className="pt-16 pb-6 px-6 flex flex-col items-center justify-center space-y-4">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">{capitalize(name)}</h2>
-                    {governedByOptimism &&
+                    {/* {governedByOptimism &&
                         <Badge
                             variant="default"
                             className="bg-[#FF0421] text-white rounded-full"
                         >
                             Governed by Optimism
                         </Badge>
-                    }
+                    } */}
                 </CardContent>
             </Card>
         </Link>

@@ -1,16 +1,18 @@
 import { SectionTitle, Subtitle, Title } from "@/components/Typography";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AggregatedData, generateChainData, Superchain } from "@/lib/generateChainData";
+import getChains, { AggregatedData } from "@/lib/getChainData";
 import { notFound } from "next/navigation";
 import IconImage from "@/components/IconImage";
-import { capitalize, cn } from "@/lib/utils";
+import { capitalize, cn, parseStringValue } from "@/lib/utils";
 import Container from "@/components/Container";
 import NetworkCard from "@/components/NetworkCard";
 import { Badge } from "@/components/ui/badge";
 import classNames from "classnames";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { getContrastingTextColor } from "@/lib/getAverageColor";
 
+// TODO:
 // L1 Contract
 // Contract addresses for L1
 // L2 contracts are the same i believe
@@ -28,88 +30,70 @@ export const dynamicParams = false;
 
 // Pre-generate static paths
 export async function generateStaticParams() {
-    const chains = await generateChainData();
+    const chains = await getChains();
 
-    const params: Array<{ chainIdOrName: string }> = [];
-
-    for (const key in chains) {
-        const chain = chains[key];
-        if (chain?.main?.chainId) {
-            params.push({ chainIdOrName: chain.main.chainId.toString() });
-        }
-        if (chain?.main?.chain) {
-            params.push({ chainIdOrName: chain.main.chain.toLowerCase() });
-        }
-    }
-
-    return params;
+    return Object.values(chains).flatMap((chain: AggregatedData) => [
+        { chainIdOrName: chain.main.chainId.toString() }, // Chain ID
+        { chainIdOrName: chain.main.name.toLowerCase() }, // Chain Name
+    ]);
 }
 
 // Generate metadata dynamically
 export async function generateMetadata({ params }: { params: { chainIdOrName: string } }) {
     const { chainIdOrName } = await params;
-    const chain = await getChain(chainIdOrName)
-    if (chain) {
-        return {
-            title: `Superchain: ${chain.main.name}`,
-            description: `Explore details of the ${chain.main.name} blockchain, including network RPCs, block explorers, and other network configurations.`,
-            openGraph: {
-                title: `${chain.main.name} Blockchain Details`,
-                description: `Comprehensive details of ${chain.main.name}, including chain ID: ${chain.main.chainId}, network RPCs, and block explorers.`,
-                url: `${process.env.NEXT_PUBLIC_BASE_URL}/chain/${chainIdOrName}`,
-            },
-            twitter: {
-                card: "summary_large_image",
-                title: `${chain.main.name} Blockchain Overview`,
-                description: `Explore ${chain.main.name} with chain ID ${chain.main.chainId}. Learn more about its network, configurations, and services.`,
-            },
-        };
-    } else {
-        // Fallback metadata for not found chains, should return not found page anyway
+    const chain = await getChains(chainIdOrName);
+
+    if (!chain) {
         return {
             title: `Chain Not Found: ${decodeURIComponent(chainIdOrName)}`,
-            description: `The blockchain with ID or name ${decodeURIComponent(chainIdOrName)} could not be found. Check the chain ID or name and try again.`,
+            description: `The blockchain with ID or name ${decodeURIComponent(chainIdOrName)} could not be found.`,
         };
     }
+
+    return {
+        title: `Superchain: ${chain.main.name}`,
+        description: `Explore details of the ${chain.main.name} chain.`,
+        openGraph: {
+            title: `${chain.main.name} Superchain Details`,
+            description: `Details of the ${chain.main.name} chain.`,
+            url: `${process.env.NEXT_PUBLIC_BASE_URL}/chain/${chainIdOrName}`,
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: `${chain.main.name} Blockchain Overview`,
+            description: `Explore ${chain.main.name} with chain ID ${chain.main.chainId}.`,
+        },
+    };
 }
 
-const getChain = async (chainIdOrName: string) => {
-    const chains: AggregatedData[] = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/chains`, {
-        // next: { revalidate: 46000 }, // Revalidate data every 24 hours
-    }).then((res) => res.json());
+export default async function ChainPage({ params }: ChainParams) {
+    const { chainIdOrName } = await params;
 
-    const decodedChainIdOrName = decodeURIComponent(chainIdOrName);
+    const parsedValue = parseStringValue(chainIdOrName)
 
-    // Check if chainIdOrName is a number or string
-    const isNumber = !isNaN(Number(decodedChainIdOrName));
+    let chain: AggregatedData | undefined;
 
-    // Filter the chain data for the specific chainIdOrName
-    const chain = Object.values(chains).find((chain: any) => {
-        if (isNumber) {
-            // Search by chainId if it's a number
-            return chain.main.chainId.toString() === decodedChainIdOrName;
-        } else {
-            // Search by chain name if it's a string
-            return chain.main.chain.toLowerCase() === decodedChainIdOrName.toLowerCase();
-        }
-    });
-
-    return chain
-}
-
-// Main page component with ISG
-export default async function ChainPage({ params }: { params: { chainIdOrName: string } }) {
-    const { chainIdOrName } = params;
-    const chain: AggregatedData | undefined = await getChain(chainIdOrName)
-    if (chain === undefined) {
+    if(typeof parsedValue === 'number'){
+        chain = await getChains(parsedValue)
+    } else if(typeof parsedValue === 'string'){
+        chain = await getChains(parsedValue)
+    } 
+    
+    if (chain === undefined){
         notFound();
-    }
+    }  
+
     return (
         <div className="flex flex-col gap- h-full">
-            <div className={`bg-red-500`}>
+            <div style={{ backgroundColor: chain.main.logoColors?.mostCommon }}>
+
                 <Container className="flex flex-col p-6">
-                    <div className="flex justify-between">
-                        <Title>{chain.main.name}</Title>
+                    <div className="flex justify-between"
+                        style={{
+                            color: getContrastingTextColor(chain.main.logoColors?.mostCommon || '#000000')
+                        }}
+                    >
+                        <Title className="">{chain.main.name}</Title>
                         <div>
                             <IconImage iconParam={chain.main.logo} size={32} />
                         </div>

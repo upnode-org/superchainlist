@@ -17,3 +17,14 @@ export function capitalize(input: string): string {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize each word
       .join(' '); // Join the words back into a single string
 }
+
+export function parseStringValue(value: string): number | string {
+  const parsedNumber = Number(value);
+  
+  // Check if it's a valid finite number
+  if (!isNaN(parsedNumber) && isFinite(parsedNumber)) {
+      return parsedNumber;
+  }
+  
+  return value; // Return as string if parsing fails
+}

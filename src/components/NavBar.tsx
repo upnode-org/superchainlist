@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Search from "./Search";
 
 export default function NavBar() {
     return (
@@ -9,7 +10,7 @@ export default function NavBar() {
                     Superchain Registry
                 </Link>
                 <div>
-                    Search
+                    <Search/>
                 </div>
             </nav>
         </div>

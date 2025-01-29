@@ -1,4 +1,5 @@
 import { getImageColorsFromURL } from "@/lib/getAverageColor";
+import { unstable_cache } from "next/cache";
 
 interface ChainIdNetworkItem {
   name: string;
@@ -159,10 +160,10 @@ async function enrichSuperchainEntry(
   // Use DeFi Llama data to set an logo if present
   // Another logo api to add
   // https://cryptologos.cc/logos/optimism-ethereum-op-logo.png
+    //https://icons.llamao.fi/icons/chains/rsz_zora.jpg
   const logo = llamaData
     ? `https://icons.llamao.fi/icons/chains/rsz_${requestName.toLowerCase()}`
     : undefined;
-  llamaData?.tokenSymbol;
 
   let logoColors: { average: string; mostCommon: string } | undefined;
   if (logo) {
@@ -179,8 +180,6 @@ async function enrichSuperchainEntry(
       
     }
   }
-
-  //https://icons.llamao.fi/icons/chains/rsz_zora.jpg
 
   // Omit explorers from chainIdData to avoid conflicts
   const { explorers: _unused, ...restChainIdData } = chainIdData ?? {};
@@ -283,7 +282,7 @@ function buildAggregatedChainStructure(enrichedSuperchains: Superchain[]) {
  *   }
  * }
  */
-export async function generateChainData(): Promise<AggregatedData[]> {
+async function generateChainData(): Promise<AggregatedData[]> {
   // Fetch / assemble maps / arrays
   const [chainIdMap, defiLlamaMap, superchainEntries] = await Promise.all([
     getChainIdNetworkMap(),
@@ -310,3 +309,28 @@ export async function generateChainData(): Promise<AggregatedData[]> {
   
   return structuredData;
 }
+
+ const cachedGenerateChainData = unstable_cache(generateChainData, ["chain-data"], {
+  revalidate: 86400, 
+});
+
+export async function getChains(): Promise<AggregatedData[]>;
+export async function getChains(id: number): Promise<AggregatedData | undefined>;
+export async function getChains(name: string): Promise<AggregatedData | undefined>;
+
+export async function getChains(identifier?: number | string): Promise<AggregatedData[] | AggregatedData | undefined> {
+  const chainData = await cachedGenerateChainData();
+
+  // If no identifier is provided, return all chains
+  if (identifier === undefined) {
+    return chainData;
+  }
+
+  if (typeof identifier === "number") {
+    return chainData.find(chain => chain.main.chainId === identifier);
+  } else {
+    return chainData.find(chain => chain.main.name.toLowerCase() === identifier.toLowerCase());
+  }
+}
+
+export default getChains;
